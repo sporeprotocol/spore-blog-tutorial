@@ -7,9 +7,10 @@ import {
   createCluster,
   predefinedSporeConfigs,
 } from '@spore-sdk/core';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-type Site = {
+export type Site = {
   id: string;
   name: string;
   description: string;
@@ -105,7 +106,9 @@ export default function Home() {
         <h2>My Sites</h2>
         <ul>
           {sites.map((site) => (
-            <li key={site.id}>{site.name}</li>
+            <li key={site.id}>
+              <Link href={`/site/${site.id}`}>{site.name}</Link>
+            </li>
           ))}
         </ul>
       </div>
