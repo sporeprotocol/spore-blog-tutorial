@@ -1,15 +1,13 @@
-import { getCapacities } from '@/utils/balance';
+import useWallet from '@/hooks/useWallet';
 import { hex2String } from '@/utils/helpers';
 import { signTransaction } from '@/utils/transaction';
-import { Indexer, RPC, commons, config, helpers } from '@ckb-lumos/lumos';
+import { Indexer, RPC, config, helpers } from '@ckb-lumos/lumos';
 import {
   ClusterData,
   createCluster,
   predefinedSporeConfigs,
 } from '@spore-sdk/core';
-import { useEffect, useMemo, useState } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
+import { useEffect, useState } from 'react';
 
 type Site = {
   id: string;
@@ -18,44 +16,11 @@ type Site = {
 };
 
 export default function Home() {
-  const { address: ethAddress, isConnected } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
-  const { disconnect } = useDisconnect();
-  const [balance, setBalance] = useState(0);
-
+  const { address, lock, balance, isConnected, connect, disconnect } =
+    useWallet();
   const [sites, setSites] = useState<Site[]>([]);
   const [siteName, setSiteName] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
-
-  const lock = useMemo(() => {
-    if (!ethAddress) return;
-
-    return commons.omnilock.createOmnilockScript(
-      {
-        auth: { flag: 'ETHEREUM', content: ethAddress ?? '0x' },
-      },
-      { config: config.predefined.AGGRON4 },
-    );
-  }, [ethAddress]);
-
-  const address = useMemo(
-    () =>
-      lock
-        ? helpers.encodeToAddress(lock, { config: config.predefined.AGGRON4 })
-        : undefined,
-    [lock],
-  );
-
-  useEffect(() => {
-    if (!address) {
-      return;
-    }
-    getCapacities(address).then((capacities) => {
-      setBalance(capacities.div(10 ** 8).toNumber());
-    });
-  }, [address]);
 
   useEffect(() => {
     if (!lock) {
