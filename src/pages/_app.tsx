@@ -1,4 +1,3 @@
-import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import { WagmiConfig, createConfig, mainnet } from 'wagmi';
 import { createPublicClient, http } from 'viem';
