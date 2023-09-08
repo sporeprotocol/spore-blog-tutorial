@@ -1,11 +1,19 @@
-import { commons, config, helpers } from "@ckb-lumos/lumos";
-import { useEffect, useMemo } from "react";
-import { useAccount, useConnect } from "wagmi";
-import { InjectedConnector } from "wagmi/connectors/injected";
+import useWallet from '@/hooks/useWallet';
+import { hex2String } from '@/utils/helpers';
+import { Indexer } from '@ckb-lumos/lumos';
+import { ClusterData, predefinedSporeConfigs } from '@spore-sdk/core';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
+import { Site } from '..';
 
-export default function SitePage {
+export default function SitePage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const { lock, isConnected, connect } = useWallet();
+  const [siteInfo, setSiteInfo] = useState<Site>();
+
   useEffect(() => {
-    if (!address) {
+    if (!id) {
       return;
     }
 
@@ -13,30 +21,30 @@ export default function SitePage {
       const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
       const { script } = predefinedSporeConfigs.Aggron4.scripts.Cluster;
       const collector = indexer.collector({
-        type: { ...script, args: '0x' },
+        type: { ...script, args: id as string },
       });
 
-      const sites = [];
       for await (const cell of collector.collect()) {
-        const ownerAddress = helpers.encodeToAddress(cell.cellOutput.lock, {
-          config: config.predefined.AGGRON4,
-        });
-        if (ownerAddress !== address) continue;
-
         const unpacked = ClusterData.unpack(cell.data);
-        sites.push({
+        setSiteInfo({
           id: cell.cellOutput.type!.args,
           name: hex2String(unpacked.name.slice(2)),
           description: hex2String(unpacked.description.slice(2)),
         });
       }
-      setSites(sites);
     })();
-  }, [address]);
+  }, [id, lock]);
 
   return (
-      <div>
-        <h1></h1>
-      </div>
-      )
+    <div>
+      <h1>{siteInfo?.name}</h1>
+      <p>{siteInfo?.description}</p>
+      {isConnected ? (
+        <button>Add Post</button>
+      ) : (
+        <button onClick={() => connect()}>Connect Wallet</button>
+      )}
+      <div></div>
+    </div>
+  );
 }
