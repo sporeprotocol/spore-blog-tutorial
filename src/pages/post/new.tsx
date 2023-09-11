@@ -16,8 +16,6 @@ export default function NewPoost() {
     e.preventDefault();
     if (!address || !lock) return;
 
-    console.log(JSON.stringify({ title, content }));
-
     const { txSkeleton } = await createSpore({
       data: {
         content: Buffer.from(JSON.stringify({ title, content })),
