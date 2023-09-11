@@ -8,7 +8,7 @@ import {
 } from '@spore-sdk/core';
 import { useEffect, useState } from 'react';
 import { useCallback } from 'react';
-import { Post, Site } from './type';
+import { Post, Site } from '../type';
 import Link from 'next/link';
 
 const id = process.env.NEXT_PUBLIC_SITE_ID;

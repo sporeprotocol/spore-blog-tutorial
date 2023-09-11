@@ -4,7 +4,7 @@ import { SporeData, predefinedSporeConfigs } from '@spore-sdk/core';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useRemark } from 'react-remark';
-import { Post } from '../type';
+import { Post } from '../../type';
 
 export default function Post() {
   const router = useRouter();

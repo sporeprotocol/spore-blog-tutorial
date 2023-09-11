@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useCallback } from 'react';
 import { signTransaction } from '@/utils/transaction';
-import { Post, Site } from '../type';
+import { Post, Site } from '../../type';
 
 export default function SitePage() {
   const router = useRouter();

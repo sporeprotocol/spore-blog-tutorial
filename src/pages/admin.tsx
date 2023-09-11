@@ -9,7 +9,7 @@ import {
 } from '@spore-sdk/core';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Site } from './type';
+import { Site } from '../type';
 
 export default function Home() {
   const { address, lock, balance, isConnected, connect, disconnect } =
