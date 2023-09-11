@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { Site } from '..';
 import Link from 'next/link';
 
-type Post = {
+export type Post = {
   id: string;
   title: string;
   content: string;
