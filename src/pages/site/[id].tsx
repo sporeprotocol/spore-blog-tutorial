@@ -40,7 +40,9 @@ export default function SitePage() {
       <h1>{siteInfo?.name}</h1>
       <p>{siteInfo?.description}</p>
       {isConnected ? (
-        <button>Add Post</button>
+        <button onClick={() => router.push(`/post/new?id=${id}`)}>
+          Add Post
+        </button>
       ) : (
         <button onClick={() => connect()}>Connect Wallet</button>
       )}
