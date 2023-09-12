@@ -5,42 +5,60 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useRemark } from 'react-remark';
 import { Post } from '../../type';
+import {
+  GetServerSidePropsContext,
+  GetStaticPaths,
+  GetStaticPathsContext,
+  GetStaticProps,
+} from 'next';
 
-export default function Post() {
-  const router = useRouter();
-  const { id } = router.query;
-  const [post, setPost] = useState<Post>();
-  const [reactContent, setMarkdownSource] = useRemark();
+async function fetchPost(id: string) {
+  const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
+  const { script } = predefinedSporeConfigs.Aggron4.scripts.Spore;
+  const collector = indexer.collector({
+    type: { ...script, args: id as string },
+  });
 
-  useEffect(() => {
-    if (!id) {
-      return;
+  for await (const cell of collector.collect()) {
+    const unpacked = SporeData.unpack(cell.data);
+
+    const { title, content } =
+      JSON.parse(hex2String(unpacked.content.slice(2))) ?? {};
+    if (title && content) {
+      return {
+        id: cell.cellOutput.type!.args,
+        outPoint: cell.outPoint!,
+        title,
+        content,
+      };
     }
+  }
+}
 
-    (async () => {
-      const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
-      const { script } = predefinedSporeConfigs.Aggron4.scripts.Spore;
-      const collector = indexer.collector({
-        type: { ...script, args: id as string },
-      });
+export const getStaticPaths: GetStaticPaths = () => {
+  return {
+    paths: [],
+    fallback: 'blocking',
+  };
+}
 
-      for await (const cell of collector.collect()) {
-        const unpacked = SporeData.unpack(cell.data);
+export const getStaticProps: GetStaticProps<{}, { id: string }> = async (context) => {
+  if (!context.params?.id) {
+    return {
+      notFound: true,
+    };
+  }
+  const post = await fetchPost(context.params.id as string);
 
-        const { title, content } =
-          JSON.parse(hex2String(unpacked.content.slice(2))) ?? {};
-        if (title && content) {
-          setPost({
-            id: cell.cellOutput.type!.args,
-            outPoint: cell.outPoint!,
-            title,
-            content,
-          });
-          return;
-        }
-      }
-    })();
-  }, [id]);
+  return {
+    props: {
+      post,
+    },
+  };
+};
+
+export default function Post({ post }: { post?: Post }) {
+  const [reactContent, setMarkdownSource] = useRemark();
 
   useEffect(() => {
     setMarkdownSource(post?.content ?? '');
