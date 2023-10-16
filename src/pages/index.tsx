@@ -1,10 +1,24 @@
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
-import { BI, RPC, commons, config, helpers } from '@ckb-lumos/lumos';
+import { BI, Indexer, RPC, commons, config, helpers } from '@ckb-lumos/lumos';
 import { useEffect, useMemo, useState } from 'react';
 import { getCapacities } from '../utils/balance';
-import { createCluster, predefinedSporeConfigs } from '@spore-sdk/core';
+import {
+  createCluster,
+  predefinedSporeConfigs,
+  unpackToRawClusterData,
+} from '@spore-sdk/core';
 import { signTransaction } from '@/utils/transaction';
+
+type Site = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+const hex2String = (hex: string) => {
+  return Buffer.from(hex, 'hex').toString('utf-8');
+};
 
 export default function Home() {
   const { address: ethAddress, isConnected } = useAccount();
@@ -15,6 +29,7 @@ export default function Home() {
   const [balance, setBalance] = useState<BI | null>(null);
   const [siteName, setSiteName] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
+  const [sites, setSites] = useState<Site[]>([]);
 
   const lock = useMemo(() => {
     if (!ethAddress) return;
@@ -40,6 +55,32 @@ export default function Home() {
       setBalance(capacities.div(10 ** 8));
     });
   }, [address]);
+
+  useEffect(() => {
+    if (!lock) {
+      return;
+    }
+
+    (async () => {
+      const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
+      const { script } = predefinedSporeConfigs.Aggron4.scripts.Cluster;
+      const collector = indexer.collector({
+        type: { ...script, args: '0x' },
+        lock,
+      });
+
+      const sites = [];
+      for await (const cell of collector.collect()) {
+        const unpacked = unpackToRawClusterData(cell.data);
+        sites.push({
+          id: cell.cellOutput.type!.args,
+          name: hex2String(unpacked.name.slice(2)),
+          description: hex2String(unpacked.description.slice(2)),
+        });
+      }
+      setSites(sites);
+    })();
+  }, [lock]);
 
   const handleCreateSite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,6 +134,14 @@ export default function Home() {
           </div>
           <button type="submit">Create</button>
         </form>
+      </div>
+      <div>
+        <h2>My Sites</h2>
+        <ul>
+          {sites.map((site) => (
+            <li key={site.id}>{site.name}</li>
+          ))}
+        </ul>
       </div>
     </div>
   );
