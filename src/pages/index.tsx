@@ -1,8 +1,10 @@
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { InjectedConnector } from 'wagmi/connectors/injected';
-import { BI, commons, config, helpers } from '@ckb-lumos/lumos';
+import { BI, RPC, commons, config, helpers } from '@ckb-lumos/lumos';
 import { useEffect, useMemo, useState } from 'react';
 import { getCapacities } from '../utils/balance';
+import { createCluster, predefinedSporeConfigs } from '@spore-sdk/core';
+import { signTransaction } from '@/utils/transaction';
 
 export default function Home() {
   const { address: ethAddress, isConnected } = useAccount();
@@ -14,14 +16,21 @@ export default function Home() {
   const [siteName, setSiteName] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
 
-  const address = useMemo(() => {
+  const lock = useMemo(() => {
     if (!ethAddress) return;
-
-    const lock = commons.omnilock.createOmnilockScript({
-      auth: { flag: 'ETHEREUM', content: ethAddress ?? '0x' },
-    });
-    return helpers.encodeToAddress(lock, { config: config.predefined.AGGRON4 });
+    const lock = commons.omnilock.createOmnilockScript(
+      {
+        auth: { flag: 'ETHEREUM', content: ethAddress ?? '0x' },
+      },
+      { config: config.predefined.AGGRON4 },
+    );
+    return lock;
   }, [ethAddress]);
+
+  const address = useMemo(() => {
+    if (!lock) return;
+    return helpers.encodeToAddress(lock, { config: config.predefined.AGGRON4 });
+  }, [lock]);
 
   useEffect(() => {
     if (!address) {
@@ -34,7 +43,20 @@ export default function Home() {
 
   const handleCreateSite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(siteName, siteDescription);
+    if (!address || !lock) return;
+
+    const { txSkeleton } = await createCluster({
+      data: {
+        name: siteName,
+        description: siteDescription,
+      },
+      fromInfos: [address],
+      toLock: lock,
+    });
+    const tx = await signTransaction(txSkeleton);
+    const rpc = new RPC(predefinedSporeConfigs.Aggron4.ckbNodeUrl);
+    const hash = await rpc.sendTransaction(tx, 'passthrough');
+    console.log(hash);
   };
 
   if (!isConnected) {
