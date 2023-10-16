@@ -11,6 +11,8 @@ export default function Home() {
   });
   const { disconnect } = useDisconnect();
   const [balance, setBalance] = useState<BI | null>(null);
+  const [siteName, setSiteName] = useState('');
+  const [siteDescription, setSiteDescription] = useState('');
 
   const address = useMemo(() => {
     if (!ethAddress) return;
@@ -30,17 +32,46 @@ export default function Home() {
     });
   }, [address]);
 
+  const handleCreateSite = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(siteName, siteDescription);
+  };
+
+  if (!isConnected) {
+    return <button onClick={() => connect()}>Connect Wallet</button>;
+  }
+
   return (
     <div>
-      {isConnected ? (
-        <div>
-          <div>CKB Address: {address}</div>
-          <div>Balance: {balance?.toNumber() ?? 0} CKB</div>
-          <button onClick={() => disconnect()}>Disconnect</button>
-        </div>
-      ) : (
-        <button onClick={() => connect()}>Connect Wallet</button>
-      )}
+      <div>
+        <div>CKB Address: {address}</div>
+        <div>Balance: {balance?.toNumber() ?? 0} CKB</div>
+        <button onClick={() => disconnect()}>Disconnect</button>
+      </div>
+      <div>
+        <h2>Create Site</h2>
+        <form onSubmit={handleCreateSite}>
+          <div>
+            <label htmlFor="name">Name: </label>
+            <input
+              type="text"
+              id="name"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="description">Description: </label>
+            <input
+              type="text"
+              id="description"
+              value={siteDescription}
+              onChange={(e) => setSiteDescription(e.target.value)}
+            />
+          </div>
+          <button type="submit">Create</button>
+        </form>
+      </div>
     </div>
   );
 }
