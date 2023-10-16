@@ -1,16 +1,18 @@
 import useWallet from '@/hooks/useWallet';
-import { Indexer } from '@ckb-lumos/lumos';
+import { Indexer, OutPoint, RPC } from '@ckb-lumos/lumos';
 import { getSporeScript, unpackToRawClusterData, unpackToRawSporeData, bufferToRawString } from '@spore-sdk/core';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Site } from '..';
 import { config } from '@/config';
 import Link from 'next/link';
+import { signTransaction } from '@/utils/transaction';
 
 export type Post = {
   id: string;
   title: string;
   content: string;
+  outPoint: OutPoint;
 };
 
 export default function SitePage() {
@@ -19,6 +21,38 @@ export default function SitePage() {
   const { lock, isConnected, connect } = useWallet();
   const [siteInfo, setSiteInfo] = useState<Site>();
   const [posts, setPosts] = useState<Post[]>([]);
+  const { address } = useWallet();
+
+  const fetchPosts = useCallback(async () => {
+    const indexer = new Indexer(config.ckbIndexerUrl);
+    const { script } = getSporeScript(config, 'Spore');
+    const collector = indexer.collector({
+      type: { ...script, args: '0x' },
+      lock,
+    });
+
+    const posts = [];
+    for await (const cell of collector.collect()) {
+      const unpacked = unpackToRawSporeData(cell.data);
+      const { contentType } = unpacked;
+
+      if (contentType !== 'application/json' || unpacked.clusterId !== id) {
+        continue;
+      }
+
+      const { title, content } =
+        JSON.parse(bufferToRawString(unpacked.content)) ?? {};
+      if (title && content) {
+        posts.push({
+          id: cell.cellOutput.type!.args,
+          title,
+          content,
+          outPoint: cell.outPoint!,
+        });
+      }
+    }
+    setPosts(posts);
+  }, [id, lock]);
 
   useEffect(() => {
     if (!id) {
@@ -41,37 +75,25 @@ export default function SitePage() {
         });
       }
     })();
+    fetchPosts();
+  }, [id, lock, fetchPosts]);
 
-    (async () => {
-      const indexer = new Indexer(config.ckbIndexerUrl);
-      const { script } = getSporeScript(config, 'Spore');
-      const collector = indexer.collector({
-        type: { ...script, args: '0x' },
-        lock,
-      });
+  const handlePostDelete = async (id: string) => {
+    if (!address) return;
 
-      const posts = [];
-      for await (const cell of collector.collect()) {
-        const unpacked = unpackToRawSporeData(cell.data);
-        const { contentType } = unpacked;
+    const post = posts.find((post) => post.id === id);
+    if (!post) return;
 
-        if (contentType !== 'application/json' || unpacked.clusterId !== id) {
-          continue;
-        }
-
-        const { title, content } =
-          JSON.parse(bufferToRawString(unpacked.content)) ?? {};
-        if (title && content) {
-          posts.push({
-            id: cell.cellOutput.type!.args,
-            title,
-            content,
-          });
-        }
-      }
-      setPosts(posts);
-    })();
-  }, [id, lock]);
+    const { txSkeleton } = await destroySpore({
+      outPoint: post.outPoint,
+      fromInfos: [address],
+    });
+    const tx = await signTransaction(txSkeleton);
+    const rpc = new RPC(config.ckbNodeUrl);
+    const hash = await rpc.sendTransaction(tx, 'passthrough');
+    setTimeout(() => fetchPosts(), 1000);
+    console.log(hash);
+  };
 
   return (
     <div>
@@ -90,6 +112,11 @@ export default function SitePage() {
           {posts.map((post) => (
             <li key={post.id}>
               <Link href={`/post/${post.id}`}>{post.title}</Link>
+              {isConnected && (
+                <button onClick={() => handlePostDelete(post.id)}>
+                  delete
+                </button>
+              )}
             </li>
           ))}
         </ul>
