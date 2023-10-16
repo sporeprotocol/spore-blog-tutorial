@@ -1,60 +1,26 @@
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
-import { BI, Indexer, RPC, commons, config, helpers } from '@ckb-lumos/lumos';
-import { useEffect, useMemo, useState } from 'react';
-import { getCapacities } from '../utils/balance';
+import { Indexer, RPC } from '@ckb-lumos/lumos';
+import { useEffect, useState } from 'react';
 import {
   createCluster,
   predefinedSporeConfigs,
   unpackToRawClusterData,
 } from '@spore-sdk/core';
 import { signTransaction } from '@/utils/transaction';
+import useWallet from '@/hooks/useWallet';
+import Link from 'next/link';
 
-type Site = {
+export type Site = {
   id: string;
   name: string;
   description: string;
 };
 
-const hex2String = (hex: string) => {
-  return Buffer.from(hex, 'hex').toString('utf-8');
-};
-
 export default function Home() {
-  const { address: ethAddress, isConnected } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
-  const { disconnect } = useDisconnect();
-  const [balance, setBalance] = useState<BI | null>(null);
+  const { address, lock, balance, isConnected, connect, disconnect } =
+    useWallet();
   const [siteName, setSiteName] = useState('');
   const [siteDescription, setSiteDescription] = useState('');
   const [sites, setSites] = useState<Site[]>([]);
-
-  const lock = useMemo(() => {
-    if (!ethAddress) return;
-    const lock = commons.omnilock.createOmnilockScript(
-      {
-        auth: { flag: 'ETHEREUM', content: ethAddress ?? '0x' },
-      },
-      { config: config.predefined.AGGRON4 },
-    );
-    return lock;
-  }, [ethAddress]);
-
-  const address = useMemo(() => {
-    if (!lock) return;
-    return helpers.encodeToAddress(lock, { config: config.predefined.AGGRON4 });
-  }, [lock]);
-
-  useEffect(() => {
-    if (!address) {
-      return;
-    }
-    getCapacities(address).then((capacities) => {
-      setBalance(capacities.div(10 ** 8));
-    });
-  }, [address]);
 
   useEffect(() => {
     if (!lock) {
@@ -74,8 +40,8 @@ export default function Home() {
         const unpacked = unpackToRawClusterData(cell.data);
         sites.push({
           id: cell.cellOutput.type!.args,
-          name: hex2String(unpacked.name.slice(2)),
-          description: hex2String(unpacked.description.slice(2)),
+          name: unpacked.name,
+          description: unpacked.description,
         });
       }
       setSites(sites);
@@ -139,7 +105,9 @@ export default function Home() {
         <h2>My Sites</h2>
         <ul>
           {sites.map((site) => (
-            <li key={site.id}>{site.name}</li>
+            <li key={site.id}>
+              <Link href={`/site/${site.id}`}>{site.name}</Link>
+            </li>
           ))}
         </ul>
       </div>
