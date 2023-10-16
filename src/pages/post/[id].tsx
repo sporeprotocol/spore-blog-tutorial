@@ -35,6 +35,7 @@ export default function Post() {
         if (title && content) {
           setPost({
             id: cell.cellOutput.type!.args,
+            outPoint: cell.outPoint!,
             title,
             content,
           });
