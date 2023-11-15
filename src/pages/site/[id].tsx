@@ -1,6 +1,12 @@
 import useWallet from '@/hooks/useWallet';
 import { Indexer, OutPoint, RPC } from '@ckb-lumos/lumos';
-import { getSporeScript, unpackToRawClusterData, unpackToRawSporeData, bufferToRawString } from '@spore-sdk/core';
+import {
+  meltSpore,
+  getSporeScript,
+  bufferToRawString,
+  unpackToRawClusterData,
+  unpackToRawSporeData,
+} from '@spore-sdk/core';
 import { useRouter } from 'next/router';
 import { useCallback, useEffect, useState } from 'react';
 import { Site } from '..';
@@ -84,9 +90,8 @@ export default function SitePage() {
     const post = posts.find((post) => post.id === id);
     if (!post) return;
 
-    const { txSkeleton } = await destroySpore({
+    const { txSkeleton } = await meltSpore({
       outPoint: post.outPoint,
-      fromInfos: [address],
     });
     const tx = await signTransaction(txSkeleton);
     const rpc = new RPC(config.ckbNodeUrl);
