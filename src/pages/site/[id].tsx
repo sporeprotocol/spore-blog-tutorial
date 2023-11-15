@@ -2,7 +2,7 @@ import useWallet from '@/hooks/useWallet';
 import { Indexer, OutPoint, RPC } from '@ckb-lumos/lumos';
 import {
   bufferToRawString,
-  destroySpore,
+  meltSpore,
   predefinedSporeConfigs,
   unpackToRawClusterData,
   unpackToRawSporeData,
@@ -89,7 +89,7 @@ export default function SitePage() {
     const post = posts.find((post) => post.id === id);
     if (!post) return;
 
-    const { txSkeleton } = await destroySpore({
+    const { txSkeleton } = await meltSpore({
       outPoint: post.outPoint,
       fromInfos: [address],
     });
