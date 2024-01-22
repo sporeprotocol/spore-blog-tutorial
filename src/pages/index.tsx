@@ -1,13 +1,10 @@
 import { Indexer, RPC } from '@ckb-lumos/lumos';
 import { useEffect, useState } from 'react';
-import {
-  createCluster,
-  predefinedSporeConfigs,
-  unpackToRawClusterData,
-} from '@spore-sdk/core';
+import { createCluster, unpackToRawClusterData, getSporeScript } from '@spore-sdk/core';
 import { signTransaction } from '@/utils/transaction';
 import useWallet from '@/hooks/useWallet';
 import Link from 'next/link';
+import { config } from '@/config';
 
 export type Site = {
   id: string;
@@ -28,8 +25,8 @@ export default function Home() {
     }
 
     (async () => {
-      const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
-      const { script } = predefinedSporeConfigs.Aggron4.scripts.Cluster;
+      const indexer = new Indexer(config.ckbIndexerUrl);
+      const { script } = getSporeScript(config, 'Cluster');
       const collector = indexer.collector({
         type: { ...script, args: '0x' },
         lock,
@@ -61,7 +58,7 @@ export default function Home() {
       toLock: lock,
     });
     const tx = await signTransaction(txSkeleton);
-    const rpc = new RPC(predefinedSporeConfigs.Aggron4.ckbNodeUrl);
+    const rpc = new RPC(config.ckbNodeUrl);
     const hash = await rpc.sendTransaction(tx, 'passthrough');
     console.log(hash);
   };

@@ -1,9 +1,10 @@
 import useWallet from '@/hooks/useWallet';
 import { Indexer } from '@ckb-lumos/lumos';
-import { predefinedSporeConfigs, unpackToRawClusterData } from '@spore-sdk/core';
+import { getSporeScript, unpackToRawClusterData } from '@spore-sdk/core';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { Site } from '..';
+import { config } from '@/config';
 
 export default function SitePage() {
   const router = useRouter();
@@ -17,8 +18,8 @@ export default function SitePage() {
     }
 
     (async () => {
-      const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
-      const { script } = predefinedSporeConfigs.Aggron4.scripts.Cluster;
+      const indexer = new Indexer(config.ckbIndexerUrl);
+      const { script } = getSporeScript(config, 'Cluster');
       const collector = indexer.collector({
         type: { ...script, args: id as string },
       });
