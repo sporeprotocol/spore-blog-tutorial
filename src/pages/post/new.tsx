@@ -2,9 +2,10 @@
 import useWallet from '@/hooks/useWallet';
 import { signTransaction } from '@/utils/transaction';
 import { RPC } from '@ckb-lumos/lumos';
-import { createSpore, predefinedSporeConfigs } from '@spore-sdk/core';
+import { createSpore } from '@spore-sdk/core';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
+import { config } from '@/config';
 
 export default function NewPost() {
   const router = useRouter();
@@ -27,7 +28,7 @@ export default function NewPost() {
       toLock: lock,
     });
     const tx = await signTransaction(txSkeleton);
-    const rpc = new RPC(predefinedSporeConfigs.Aggron4.ckbNodeUrl);
+    const rpc = new RPC(config.ckbNodeUrl);
     const hash = await rpc.sendTransaction(tx, 'passthrough');
     setTitle('');
     setContent('');

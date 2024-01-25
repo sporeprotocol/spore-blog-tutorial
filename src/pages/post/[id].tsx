@@ -1,13 +1,10 @@
 import { Indexer } from '@ckb-lumos/lumos';
-import {
-  SporeData,
-  bufferToRawString,
-  predefinedSporeConfigs,
-} from '@spore-sdk/core';
+import { SporeData, bufferToRawString, getSporeScript } from '@spore-sdk/core';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useRemark } from 'react-remark';
 import { Post } from '../site/[id]';
+import { config } from '@/config';
 
 export default function Post() {
   const router = useRouter();
@@ -21,8 +18,8 @@ export default function Post() {
     }
 
     (async () => {
-      const indexer = new Indexer(predefinedSporeConfigs.Aggron4.ckbIndexerUrl);
-      const { script } = predefinedSporeConfigs.Aggron4.scripts.Spore;
+      const indexer = new Indexer(config.ckbIndexerUrl);
+      const { script } = getSporeScript(config, 'Spore');
       const collector = indexer.collector({
         type: { ...script, args: id as string },
       });
